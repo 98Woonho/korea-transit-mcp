@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { findDirect, turnaroundOrder } from "../src/analysis/direct.js";
 import { analyzeHeadway, dayTypeKst } from "../src/analysis/headway.js";
+import { findTransfers } from "../src/analysis/transfer.js";
 import type { BusLocation, Route, RouteStop } from "../src/tago/routes.js";
 import { connectWith, okResponse, parse } from "./helpers.js";
 
@@ -46,6 +47,58 @@ describe("findDirect", () => {
   it("turnaroundOrder: 방향이 0→1로 바뀌는 첫 순번", () => {
     expect(turnaroundOrder(stops)).toBe(41);
     expect(turnaroundOrder(loopStops(10, 10))).toBeUndefined();
+  });
+});
+
+describe("findTransfers", () => {
+  // 위치: 환승 정류소 H 근처에 W(약 100m), 나머지는 서로 멀리 떨어져 있다
+  const far = (n: number) => ({ lat: 36 + n * 0.01, lng: 127 });
+  const H = { lat: 36.35, lng: 127.38 };
+  const W = { lat: 36.3509, lng: 127.38 };
+  const st = (order: number, nodeId: string, direction: 0 | 1, pos = far(order)): RouteStop => ({
+    order, nodeId, name: nodeId, stopNo: `${nodeId}-no`, direction, ...pos,
+  });
+  const route = (routeId: string, routeNo: string): Route => ({ routeId, routeNo, startStop: "기점", endStop: "종점" });
+
+  // A: 출발 O → H(방향 0) … 회차 후 H 맞은편 H2(방향 1)
+  const A = { route: route("RA", "106"), stops: [st(1, "O", 0), st(2, "a2", 0), st(3, "H", 0, H), st(4, "a4", 1), st(5, "H2", 1, H)] };
+  // B: H에서 타면 도착 D까지 2정류장
+  const B = { route: route("RB", "703"), stops: [st(1, "b1", 0), st(2, "H", 0, H), st(3, "b3", 0), st(4, "D", 0)] };
+  // C: H 근처 W에서 타면 D까지 1정류장 (걸어서 갈아타기)
+  const C = { route: route("RC", "705"), stops: [st(1, "c1", 0), st(2, "W", 0, W), st(3, "D", 0)] };
+  // R: D를 먼저 지나고 H는 그 뒤 → H에서 타면 D로 못 간다 (방향이 반대)
+  const R = { route: route("RR", "999"), stops: [st(1, "D", 0), st(2, "r2", 0), st(3, "H", 0, H)] };
+  // X: 출발 O에서 도착 D까지 바로 간다 → 직통이라 환승 경로에서 빠진다
+  const X = { route: route("RX", "1"), stops: [st(1, "O", 0), st(2, "H", 0, H), st(3, "D", 0)] };
+
+  it("같은 정류소 환승과 걸어서 갈아타기를 정류장 수 합이 적은 순으로", () => {
+    const res = findTransfers([A], [B, C, R], ["O"], ["D"], { maxWalkM: 200, limit: 5 });
+    expect(res.map((t) => [t.legs[0].routeNo, t.legs[1].routeNo, t.totalStops, t.sameStop])).toEqual([
+      ["106", "705", 3, false],
+      ["106", "703", 4, true],
+    ]);
+    expect(res[0].walkM).toBeGreaterThan(80);
+    expect(res[0].walkM).toBeLessThan(120);
+    expect(res[1].legs[0]).toMatchObject({ fromNodeId: "O", toNodeId: "H", toStopNo: "H-no", stopCount: 2 });
+    expect(res[1].legs[1]).toMatchObject({ fromNodeId: "H", fromStopNo: "H-no", toNodeId: "D", stopCount: 2 });
+  });
+
+  it("maxWalkM이 0이면 같은 정류소 환승만", () => {
+    const res = findTransfers([A], [B, C], ["O"], ["D"], { maxWalkM: 0, limit: 5 });
+    expect(res.map((t) => t.legs[1].routeNo)).toEqual(["703"]);
+  });
+
+  it("반대 방향이라 이어지지 않는 노선은 나오지 않는다", () => {
+    expect(findTransfers([A], [R], ["O"], ["D"], { maxWalkM: 200, limit: 5 })).toEqual([]);
+  });
+
+  it("직통 노선은 환승 경로에 넣지 않는다", () => {
+    const res = findTransfers([A, X], [B, X], ["O"], ["D"], { maxWalkM: 0, limit: 5 });
+    expect(res.map((t) => [t.legs[0].routeNo, t.legs[1].routeNo])).toEqual([["106", "703"]]);
+  });
+
+  it("limit만큼만 돌려준다", () => {
+    expect(findTransfers([A], [B, C], ["O"], ["D"], { maxWalkM: 200, limit: 1 })).toHaveLength(1);
   });
 });
 
@@ -155,6 +208,26 @@ describe("분석 도구 (MCP)", () => {
       arguments: { cityCode: 25, fromNodeIds: ["1", "2", "3", "4", "5", "6"], toNodeIds: ["X"] },
     });
     expect(res.isError).toBe(true);
+  });
+
+  it("find_transfer_routes: 출발·도착 쪽 노선을 대조해 환승 경로와 조회 범위를 돌려준다", async () => {
+    const { client } = await connectWith({
+      getSttnThrghRouteList: (url: URL) => okResponse(url.searchParams.get("nodeid") === "O" ? routeA : routeB),
+      getRouteAcctoThrghSttnList: (url: URL) =>
+        url.searchParams.get("routeId") === "RA"
+          ? okResponse([raw(1, "O", "목원대학교", 0), raw(20, "H", "대전광역시청", 0), raw(40, "T", "비래동종점", 1)])
+          : okResponse([raw(82, "H", "대전광역시청", 1), raw(110, "D", "신탄진역", 1)]),
+    });
+    const res = parse(
+      await client.callTool({ name: "find_transfer_routes", arguments: { cityCode: 25, fromNodeIds: ["O"], toNodeIds: ["D"] } }),
+    );
+    expect(res.checkedRoutes).toEqual({ fromSide: 1, toSide: 1, truncated: false });
+    expect(res.transfers).toHaveLength(1);
+    expect(res.transfers[0]).toMatchObject({ totalStops: 47, sameStop: true, walkM: 0 });
+    expect(res.transfers[0].legs.map((l: any) => [l.routeNo, l.fromStopName, l.toStopName, l.stopCount])).toEqual([
+      ["106", "목원대학교", "대전광역시청", 19],
+      ["617", "대전광역시청", "신탄진역", 28],
+    ]);
   });
 
   it("analyze_headway: 주입한 시각의 요일로 배차간격을 적용한다", async () => {

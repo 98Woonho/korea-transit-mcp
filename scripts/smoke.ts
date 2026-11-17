@@ -84,6 +84,21 @@ if (stops.length > 0) {
   });
   console.log(`\n[find_direct_routes] ${stops[0].name} → ${destName}: ${direct.length}개 노선`);
   console.log(direct.slice(0, 5).map((d: any) => `${d.routeNo}번 ${d.fromStopName}(${d.fromNodeId}) → ${d.stopCount}정류장, ${d.towards} 방면`));
+
+  const { transfers, checkedRoutes } = await call("find_transfer_routes", {
+    cityCode,
+    fromNodeIds: stops.filter((x: any) => x.name === stops[0].name).slice(0, 5).map((x: any) => x.nodeId),
+    toNodeIds: dest.filter((x: any) => x.name === destName).slice(0, 5).map((x: any) => x.nodeId),
+  });
+  console.log(`\n[find_transfer_routes] ${transfers.length}개 경로, 조회 노선`, checkedRoutes);
+  for (const t of transfers) {
+    const [a, b] = t.legs;
+    const how = t.sameStop ? "같은 정류소" : `${b.fromStopName}까지 ${t.walkM}m 걷기`;
+    console.log(
+      `  ${a.routeNo}번 ${a.fromStopName}→${a.toStopName}(${a.toStopNo}) ${a.stopCount}정류장 → [${how}] → ` +
+        `${b.routeNo}번 ${b.fromStopName}(${b.fromStopNo})→${b.toStopName} ${b.stopCount}정류장 = ${t.totalStops}`,
+    );
+  }
 }
 
 await client.close();

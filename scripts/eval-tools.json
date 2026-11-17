@@ -9,5 +9,6 @@
   "get_route_stops",
   "get_bus_locations",
   "find_direct_routes",
+  "find_transfer_routes",
   "analyze_headway"
 ]

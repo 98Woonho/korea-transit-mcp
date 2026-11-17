@@ -3,7 +3,7 @@
  * 실제 MCP 클라이언트를 메모리 트랜스포트로 서버에 연결해서 tools/list, tools/call 을 검증한다.
  * 네트워크와 LLM을 전혀 쓰지 않으므로 CI에서 비용 0원으로 돈다.
  */
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import { describe, expect, it } from "vitest";
@@ -59,11 +59,20 @@ describe("korea-transit-mcp", () => {
     // npm run eval 이 허용하는 도구 목록과 실제 도구가 같아야 평가에서 도구가 막히지 않는다
     const evalTools = JSON.parse(readFileSync(new URL("../scripts/eval-tools.json", import.meta.url), "utf8"));
     expect([...evalTools].sort()).toEqual(tools.map((t) => t.name).sort());
+    // 각 평가 케이스의 allowed_tools 에도 모든 도구가 있어야 한다 (새 도구를 빠뜨리면 그 케이스에서 막힌다)
+    const evalRoot = new URL("../plugin/evals/", import.meta.url);
+    const prompts = readdirSync(evalRoot, { recursive: true, encoding: "utf8" }).filter((f) => f.endsWith("prompt.md"));
+    expect(prompts.length).toBeGreaterThan(0);
+    for (const p of prompts) {
+      const text = readFileSync(new URL(p.replaceAll("\\", "/"), evalRoot), "utf8");
+      for (const name of evalTools) expect(text, p).toContain(`mcp__plugin_korea-transit_korea-transit__${name}`);
+    }
 
     expect(tools.map((t) => t.name).sort()).toEqual([
       "analyze_headway",
       "find_direct_routes",
       "find_nearby_stops",
+      "find_transfer_routes",
       "get_bus_arrivals",
       "get_bus_locations",
       "get_route_info",

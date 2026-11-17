@@ -43,25 +43,36 @@ export function findDirect(
       const to = stops[j];
       if (!toNodeIds.includes(to.nodeId)) continue;
       const stopCount = to.order - from.order;
-      if (!best || stopCount < best.stopCount) {
-        best = {
-          routeId: route.routeId,
-          routeNo: route.routeNo,
-          routeType: route.routeType,
-          fromNodeId: from.nodeId,
-          fromStopName: from.name,
-          toNodeId: to.nodeId,
-          toStopName: to.name,
-          stopCount,
-          towards: from.direction === 0 ? route.endStop : from.direction === 1 ? route.startStop : undefined,
-          nextStop: stops[i + 1]?.name,
-          viaTurnaround: turnaround !== undefined && from.order < turnaround && to.order >= turnaround,
-        };
-      }
+      if (!best || stopCount < best.stopCount) best = legBetween(route, stops, i, j, turnaround);
       break; // 이 출발 정류소에서는 가장 가까운 도착 후보만 보면 된다
     }
   });
   return best;
+}
+
+/** 노선의 i번째 정류소에서 타서 j번째(i < j) 정류소에서 내리는 구간 */
+export function legBetween(
+  route: Route,
+  stops: RouteStop[],
+  i: number,
+  j: number,
+  turnaround = turnaroundOrder(stops),
+): DirectRoute {
+  const from = stops[i];
+  const to = stops[j];
+  return {
+    routeId: route.routeId,
+    routeNo: route.routeNo,
+    routeType: route.routeType,
+    fromNodeId: from.nodeId,
+    fromStopName: from.name,
+    toNodeId: to.nodeId,
+    toStopName: to.name,
+    stopCount: to.order - from.order,
+    towards: from.direction === 0 ? route.endStop : from.direction === 1 ? route.startStop : undefined,
+    nextStop: stops[i + 1]?.name,
+    viaTurnaround: turnaround !== undefined && from.order < turnaround && to.order >= turnaround,
+  };
 }
 
 /** 방향 코드가 0 → 1로 바뀌는 첫 정류소의 순번 (= 종점에서 회차한 뒤 첫 정류소). 없으면 undefined */
