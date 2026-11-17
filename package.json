@@ -1,6 +1,6 @@
 {
   "name": "korea-transit-mcp",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "description": "MCP server for Korean public bus data (stops, real-time arrivals, routes, bus locations) via data.go.kr TAGO APIs",
   "mcpName": "io.github.98Woonho/korea-transit-mcp",
   "type": "module",
