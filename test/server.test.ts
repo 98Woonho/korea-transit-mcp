@@ -56,6 +56,8 @@ describe("korea-transit-mcp", () => {
     const { client } = await connect();
     const { tools } = await client.listTools();
     expect(tools.map((t) => t.name).sort()).toEqual([
+      "analyze_headway",
+      "find_direct_routes",
       "find_nearby_stops",
       "get_bus_arrivals",
       "get_bus_locations",

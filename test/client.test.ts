@@ -40,6 +40,43 @@ describe("DataGoKrClient", () => {
     expect(err.message).toContain("SERVICE_KEY_IS_NOT_REGISTERED_ERROR");
   });
 
+  it("일시적 오류(99 세션 포화)는 재시도해서 성공한다", async () => {
+    let n = 0;
+    const fetch = async () => {
+      n++;
+      const body =
+        n < 3
+          ? { response: { header: { resultCode: "99", resultMsg: "가용한 세션이 존재하지 않습니다. (30/30)" } } }
+          : okResponse([{ x: 1 }]);
+      return new Response(JSON.stringify(body), { status: 200 });
+    };
+    const client = new DataGoKrClient({ serviceKey: "k", fetch, retryDelaysMs: [0, 0] });
+    expect((await client.getList("/svc/op")).items).toEqual([{ x: 1 }]);
+    expect(n).toBe(3);
+  });
+
+  it("재시도 횟수를 넘기면 마지막 오류를 던진다", async () => {
+    let n = 0;
+    const fetch = async () => {
+      n++;
+      return new Response("bad gateway", { status: 502 });
+    };
+    const client = new DataGoKrClient({ serviceKey: "k", fetch, retryDelaysMs: [0, 0] });
+    await expect(client.getList("/svc/op")).rejects.toMatchObject({ code: "HTTP_502" });
+    expect(n).toBe(3);
+  });
+
+  it("인증키 오류·한도 초과는 재시도하지 않는다", async () => {
+    let n = 0;
+    const fetch = async () => {
+      n++;
+      return new Response(JSON.stringify({ response: { header: { resultCode: "22", resultMsg: "LIMITED" } } }), { status: 200 });
+    };
+    const client = new DataGoKrClient({ serviceKey: "k", fetch, retryDelaysMs: [0, 0] });
+    await expect(client.getList("/svc/op")).rejects.toMatchObject({ code: "22" });
+    expect(n).toBe(1);
+  });
+
   it("JSON resultCode 오류를 던진다", async () => {
     const { fetch } = fakeFetch({
       op: { response: { header: { resultCode: "22", resultMsg: "LIMITED NUMBER OF SERVICE REQUESTS EXCEEDS ERROR." } } },

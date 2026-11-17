@@ -4,9 +4,12 @@ import { DataGoKrClient, type FetchLike } from "../src/datagokr/client.js";
 import { createServer } from "../src/server.js";
 
 /** 가짜 fetch를 물린 서버에 실제 MCP 클라이언트를 메모리 트랜스포트로 연결한다 */
-export async function connectWith(routes: Record<string, unknown>, serviceKey: string | undefined = "test-key") {
+export async function connectWith(
+  routes: Record<string, unknown>,
+  { serviceKey = "test-key" as string | undefined, now }: { serviceKey?: string; now?: () => Date } = {},
+) {
   const fake = fakeFetch(routes);
-  const server = createServer({ client: new DataGoKrClient({ serviceKey, fetch: fake.fetch }) });
+  const server = createServer({ client: new DataGoKrClient({ serviceKey, fetch: fake.fetch }), now });
   const client = new Client({ name: "test", version: "0.0.0" });
   const [clientT, serverT] = InMemoryTransport.createLinkedPair();
   await Promise.all([server.connect(serverT), client.connect(clientT)]);

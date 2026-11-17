@@ -28,6 +28,8 @@ export interface DataGoKrClientOptions {
   fetch?: FetchLike;
   baseUrl?: string;
   timeoutMs?: number;
+  /** 일시적 오류 시 재시도 대기 시간(ms). 길이만큼 재시도한다. 기본 [500, 1500] */
+  retryDelaysMs?: number[];
 }
 
 export interface ListResult<T> {
@@ -39,20 +41,50 @@ type Params = Record<string, string | number | undefined>;
 
 const SUCCESS_CODES = new Set(["00", "0", "000"]);
 
+/**
+ * 잠시 뒤 다시 하면 성공할 수 있는 오류.
+ *  - 99: "가용한 세션이 존재하지 않습니다 (30/30)" — 공공 API 서버 동시 세션 포화 (2026-11-17 실제 발생)
+ *  - HTTP 5xx, 타임아웃, 네트워크 오류
+ * 인증키 오류(30), 일일 한도 초과(22) 등은 재시도해도 소용없으므로 제외한다.
+ */
+export function isRetryable(err: unknown): boolean {
+  if (err instanceof DataGoKrError) {
+    return err.code === "99" || /^HTTP_5\d\d$/.test(err.code ?? "");
+  }
+  if (err instanceof Error) {
+    return err.name === "TimeoutError" || err.name === "AbortError" || err.name === "TypeError"; // fetch 네트워크 실패는 TypeError
+  }
+  return false;
+}
+
 export class DataGoKrClient {
   private readonly fetchImpl: FetchLike;
   private readonly baseUrl: string;
   private readonly timeoutMs: number;
+  private readonly retryDelaysMs: number[];
 
   constructor(private readonly options: DataGoKrClientOptions) {
     this.fetchImpl = options.fetch ?? ((input, init) => fetch(input, init));
     this.baseUrl = options.baseUrl ?? "https://apis.data.go.kr";
     this.timeoutMs = options.timeoutMs ?? 10_000;
+    this.retryDelaysMs = options.retryDelaysMs ?? [500, 1500];
   }
 
   async getList<T>(path: string, params: Params = {}): Promise<ListResult<T>> {
-    const body = await this.request(path, params);
+    const body = await this.requestWithRetry(path, params);
     return { items: normalizeItems<T>(body?.items), totalCount: Number(body?.totalCount ?? 0) };
+  }
+
+  private async requestWithRetry(path: string, params: Params): Promise<any> {
+    for (let attempt = 0; ; attempt++) {
+      try {
+        return await this.request(path, params);
+      } catch (err) {
+        const delay = this.retryDelaysMs[attempt];
+        if (delay === undefined || !isRetryable(err)) throw err;
+        await new Promise((r) => setTimeout(r, delay));
+      }
+    }
   }
 
   private async request(path: string, params: Params): Promise<any> {

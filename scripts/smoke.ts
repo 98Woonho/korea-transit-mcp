@@ -65,6 +65,25 @@ if (found[0]) {
   console.log(`\n[get_route_stops] ${routeStops.length}개 정류소, 처음 3개:`, routeStops.slice(0, 3));
   const buses = await call("get_bus_locations", { cityCode, routeId: found[0].routeId });
   console.log(`\n[get_bus_locations] 운행 중 ${buses.length}대, 처음 3대:`, buses.slice(0, 3));
+
+  const hw = await call("analyze_headway", { cityCode, routeId: found[0].routeId });
+  console.log(
+    `\n[analyze_headway] ${hw.busCount}대 / ${hw.totalStops}정류장, 균등 간격 ${hw.idealGapStops}정류장, 배차 ${hw.scheduledIntervalMin}분(${hw.dayType})`,
+  );
+  console.log(hw.gaps.map((g: any) => `${g.behind}→${g.ahead}: ${g.gapStops}정류장 ×${g.ratio} ≈${g.estMin}분`));
+}
+
+if (stops.length > 0) {
+  // 같은 이름 정류소 후보를 모두 넘겨 직통 노선 탐색 (출발: 검색 결과 이름, 도착: 4번째 인자)
+  const destName = process.argv[5] ?? "목련아파트";
+  const dest = await call("search_bus_stops", { cityCode, name: destName, limit: 5 });
+  const direct = await call("find_direct_routes", {
+    cityCode,
+    fromNodeIds: stops.filter((x: any) => x.name === stops[0].name).slice(0, 5).map((x: any) => x.nodeId),
+    toNodeIds: dest.filter((x: any) => x.name === destName).slice(0, 5).map((x: any) => x.nodeId),
+  });
+  console.log(`\n[find_direct_routes] ${stops[0].name} → ${destName}: ${direct.length}개 노선`);
+  console.log(direct.slice(0, 5).map((d: any) => `${d.routeNo}번 ${d.fromStopName}(${d.fromNodeId}) → ${d.stopCount}정류장, ${d.towards} 방면`));
 }
 
 await client.close();
