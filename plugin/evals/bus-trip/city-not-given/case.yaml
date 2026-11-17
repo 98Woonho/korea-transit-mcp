@@ -1,0 +1,4 @@
+schema_version: "1.1"
+name: city-not-given
+expected_outcome: |
+  도시가 주어지지 않았다. 시청역은 여러 도시에 있으므로, 도시를 묻거나 가정한 도시를 분명히 밝혀야 한다. 말없이 한 도시를 골라 안내하면 안 된다.

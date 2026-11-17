@@ -1,0 +1,4 @@
+schema_version: "1.1"
+name: custom-threshold
+expected_outcome: |
+  사용자가 준 기준(ratio 2.0 초과만 공백)을 기본 기준보다 우선 적용하고, 적용한 기준을 리포트 머리에 밝힌다.

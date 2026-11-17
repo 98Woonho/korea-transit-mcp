@@ -6,3 +6,6 @@ coverage/
 !.env.example
 *.log
 .DS_Store
+
+# claude plugin eval 실행 결과
+plugin/evals/results/
