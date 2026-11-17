@@ -1,0 +1,13 @@
+[
+  "list_cities",
+  "search_bus_stops",
+  "find_nearby_stops",
+  "get_routes_at_stop",
+  "get_bus_arrivals",
+  "search_routes",
+  "get_route_info",
+  "get_route_stops",
+  "get_bus_locations",
+  "find_direct_routes",
+  "analyze_headway"
+]

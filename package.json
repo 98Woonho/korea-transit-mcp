@@ -19,6 +19,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "inspect": "npm run build && npx @modelcontextprotocol/inspector node dist/index.js",
+    "eval": "npm run build && node scripts/eval.mjs",
     "prepublishOnly": "npm run typecheck && npm test && npm run build",
     "version": "node scripts/sync-version.mjs && git add server.json plugin/.claude-plugin/plugin.json"
   },

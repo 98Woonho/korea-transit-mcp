@@ -3,6 +3,7 @@
  * 실제 MCP 클라이언트를 메모리 트랜스포트로 서버에 연결해서 tools/list, tools/call 을 검증한다.
  * 네트워크와 LLM을 전혀 쓰지 않으므로 CI에서 비용 0원으로 돈다.
  */
+import { readFileSync } from "node:fs";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import { describe, expect, it } from "vitest";
@@ -55,6 +56,10 @@ describe("korea-transit-mcp", () => {
   it("도구 목록을 노출한다", async () => {
     const { client } = await connect();
     const { tools } = await client.listTools();
+    // npm run eval 이 허용하는 도구 목록과 실제 도구가 같아야 평가에서 도구가 막히지 않는다
+    const evalTools = JSON.parse(readFileSync(new URL("../scripts/eval-tools.json", import.meta.url), "utf8"));
+    expect([...evalTools].sort()).toEqual(tools.map((t) => t.name).sort());
+
     expect(tools.map((t) => t.name).sort()).toEqual([
       "analyze_headway",
       "find_direct_routes",

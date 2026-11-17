@@ -76,14 +76,15 @@ jobs:
         env:
           SPEC: ${{ steps.npm_check.outputs.spec }}
         run: |
-          for i in $(seq 1 12); do
+          # 반영까지 20초~2분 이상 걸린다(v0.3.2에서 2분 1초). 여유 있게 최대 5분 기다린다.
+          for i in $(seq 1 30); do
             if npm view "$SPEC" version >/dev/null 2>&1; then
               echo "$SPEC 공개 확인"
               exit 0
             fi
             sleep 10
           done
-          echo "::error::$SPEC 이 2분 안에 npm 조회에 나타나지 않았습니다. 반영이 늦는 것이면 잠시 뒤 Re-run 하세요(이미 배포된 버전은 건너뜀). npmjs.com > Staged Packages 에 있다면 승인 후 Re-run 하고, Trusted Publisher의 Allowed actions에 'npm publish'가 있는지 확인하세요."
+          echo "::error::$SPEC 이 5분 안에 npm 조회에 나타나지 않았습니다. 반영이 늦는 것이면 잠시 뒤 Re-run 하세요(이미 배포된 버전은 건너뜀). npmjs.com > Staged Packages 에 있다면 승인 후 Re-run 하고, Trusted Publisher의 Allowed actions에 'npm publish'가 있는지 확인하세요."
           exit 1
 
       - uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
