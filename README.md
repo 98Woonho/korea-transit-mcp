@@ -9,6 +9,8 @@
 공공데이터포털(data.go.kr)의 전국 버스 Open API를 AI 에이전트가 쓸 수 있게 만든 **MCP(Model Context Protocol) 서버**입니다.
 Claude Code, Claude Desktop, Cursor 같은 MCP 클라이언트에서 "시청역에서 106번 언제 와?" 같은 질문에 **실시간 데이터로** 답할 수 있습니다.
 
+**🌐 소개 페이지: [98woonho.github.io/projects/korea-transit-mcp](https://98woonho.github.io/projects/korea-transit-mcp)** (길 건너편 정류장 구분, 1회 환승, 운행관리 리포트 데모)
+
 <p align="center">
   <img src="docs/demo.svg" alt="Claude Code에서 대전 시청역 106번 버스 도착 정보를 조회하는 데모" width="860">
 </p>
@@ -226,7 +228,7 @@ src/
     stations.ts         #   정류소 (검색, 주변, 경유 노선)
     arrivals.ts         #   도착 정보
     routes.ts           #   노선, 경유 정류소, 버스 위치, 방향 계산
-  analysis/             # 순수 계산 로직 (직통 노선 판별, 운행 간격 분석) — API 호출 없음
+  analysis/             # 순수 계산 로직 (직통·환승 경로, 운행 간격 분석) — API 호출 없음
   tools/                # MCP 도구 정의 (설명, 입력 스키마, 응답 가공)
 plugin/                 # Claude Code 플러그인 (마켓플레이스: .claude-plugin/marketplace.json)
   .claude-plugin/plugin.json  # 매니페스트, 인증키 입력(userConfig)
@@ -236,6 +238,9 @@ plugin/                 # Claude Code 플러그인 (마켓플레이스: .claude-
 scripts/smoke.ts        # 실제 API로 전체 도구 점검
 test/                   # 가짜 fetch + 인메모리 MCP 클라이언트 테스트
 docs/public-apis.md     # 사용 가능한 공공 API 정리
+showcase/               # 포트폴리오 사이트가 빌드 시 읽는 소개 자료
+  showcase.json         #   소개, 링크, 설치 안내, 도구 분류
+  demos/*.json          #   데모 시나리오: 실제 실행 기록을 요약한 녹화본 (사이트에서 애니메이션으로 재생)
 ```
 
 ### 캐시 정책 (공공 API 일일 한도 보호)

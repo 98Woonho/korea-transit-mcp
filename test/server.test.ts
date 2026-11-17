@@ -104,6 +104,26 @@ describe("korea-transit-mcp", () => {
     ]);
   });
 
+  it("포트폴리오 소개 자료(showcase/)가 실제 도구·데모 파일과 맞는다", async () => {
+    const { client } = await connect();
+    const { tools } = await client.listTools();
+    const showcaseDir = new URL("../showcase/", import.meta.url);
+    const showcase = JSON.parse(readFileSync(new URL("showcase.json", showcaseDir), "utf8"));
+
+    // 도구 분류에 모든 도구가 정확히 한 번씩
+    const grouped = showcase.toolGroups.flatMap((g: { tools: string[] }) => g.tools);
+    expect([...grouped].sort()).toEqual(tools.map((t) => t.name).sort());
+
+    // 데모 시나리오가 있고 필수 항목을 갖춘다
+    expect(showcase.demos.length).toBeGreaterThan(0);
+    for (const path of showcase.demos) {
+      const demo = JSON.parse(readFileSync(new URL(path, showcaseDir), "utf8"));
+      expect(demo, path).toMatchObject({ id: expect.any(String), title: expect.any(String), prompt: expect.any(String) });
+      expect(demo.steps.length, path).toBeGreaterThan(0);
+      expect(demo.answer.length, path).toBeGreaterThan(0);
+    }
+  });
+
   it("get_bus_arrivals: 도착이 빠른 순으로 정렬하고 분 단위를 붙인다", async () => {
     const { client } = await connect();
     const res = await client.callTool({ name: "get_bus_arrivals", arguments: { cityCode: 25, nodeId: "DJB8001378" } });
