@@ -31,6 +31,8 @@ export interface HeadwayGap {
 }
 
 export interface HeadwayAnalysis {
+  /** 분석 시각 (KST, "YYYY-MM-DD HH:mm KST") — 리포트에 그대로 쓰도록 */
+  analyzedAt: string;
   routeId: string;
   routeNo?: string;
   totalStops: number;
@@ -46,6 +48,11 @@ export interface HeadwayAnalysis {
   /** 앞뒤 차 사이 간격 (노선 순번 순) */
   gaps: HeadwayGap[];
   notes: string[];
+}
+
+export function formatKst(now: Date): string {
+  const k = new Date(now.getTime() + 9 * 60 * 60 * 1000).toISOString(); // UTC 표기를 KST로 이동
+  return `${k.slice(0, 10)} ${k.slice(11, 16)} KST`;
 }
 
 export function dayTypeKst(now: Date): DayType {
@@ -78,7 +85,18 @@ export function analyzeHeadway(input: {
 
   if (buses.length < 2 || totalStops === 0) {
     notes.push(buses.length === 0 ? "현재 운행 중인 버스가 없습니다." : "운행 중인 버스가 1대뿐이라 간격을 계산할 수 없습니다.");
-    return { routeId: input.routeId, routeNo: route?.routeNo, totalStops, busCount: buses.length, dayType, scheduledIntervalMin, buses, gaps: [], notes };
+    return {
+      analyzedAt: formatKst(now),
+      routeId: input.routeId,
+      routeNo: route?.routeNo,
+      totalStops,
+      busCount: buses.length,
+      dayType,
+      scheduledIntervalMin,
+      buses,
+      gaps: [],
+      notes,
+    };
   }
 
   const idealGapStops = totalStops / buses.length;
@@ -102,6 +120,7 @@ export function analyzeHeadway(input: {
   }
 
   return {
+    analyzedAt: formatKst(now),
     routeId: input.routeId,
     routeNo: route?.routeNo,
     totalStops,

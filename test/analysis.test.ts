@@ -90,6 +90,11 @@ describe("analyzeHeadway", () => {
     expect(r.gaps[0].ratio).toBe(1);
   });
 
+  it("analyzedAt은 KST로 표기한다", () => {
+    const r = analyzeHeadway({ routeId: "R1", stops, now: new Date("2026-11-20T15:30:00Z"), buses: [] });
+    expect(r.analyzedAt).toBe("2026-11-21 00:30 KST");
+  });
+
   it("dayTypeKst", () => {
     expect(dayTypeKst(new Date("2026-11-22T14:59:00Z"))).toBe("sunday"); // KST 일 23:59
     expect(dayTypeKst(new Date("2026-11-22T15:00:00Z"))).toBe("weekday"); // KST 월 00:00
