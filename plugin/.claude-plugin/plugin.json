@@ -22,8 +22,8 @@
     "data_go_kr_service_key": {
       "type": "string",
       "title": "공공데이터포털 인증키 (Decoding)",
-      "description": "data.go.kr 마이페이지 > 개인 API 인증키의 Decoding 키. 국토교통부 TAGO 버스 API 4종(정류소·도착·노선·위치) 활용신청이 필요합니다.",
-      "required": true,
+      "description": "data.go.kr 마이페이지 > 개인 API 인증키의 Decoding 키. 국토교통부 TAGO 버스 API 4종(정류소·도착·노선·위치) 활용신청이 필요합니다. 비워 두면 환경변수 DATA_GO_KR_SERVICE_KEY를 사용합니다.",
+      "required": false,
       "sensitive": true
     }
   }

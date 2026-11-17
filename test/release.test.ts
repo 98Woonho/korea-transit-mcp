@@ -42,11 +42,16 @@ describe("Claude Code 플러그인", () => {
     expect(entry?.source).toBe("./plugin");
   });
 
-  it("MCP 설정이 userConfig 인증키를 서버 환경변수로 넘긴다", () => {
+  it("MCP 설정이 userConfig 인증키를 실행기로 넘기고, 키는 선택 항목이다", () => {
     const server = pluginMcp.mcpServers["korea-transit"];
     const keys = Object.keys(pluginJson.userConfig);
-    expect(server.env.DATA_GO_KR_SERVICE_KEY).toBe(`\${user_config.${keys[0]}}`);
+    // 실행기가 이 값을 우선 쓰고, 비어 있으면 환경변수 DATA_GO_KR_SERVICE_KEY 로 대체한다
+    expect(server.env.KOREA_TRANSIT_PLUGIN_KEY).toBe(`\${user_config.${keys[0]}}`);
+    // DATA_GO_KR_SERVICE_KEY 를 여기서 덮어쓰면 환경변수 대체가 불가능해진다
+    expect(server.env.DATA_GO_KR_SERVICE_KEY).toBeUndefined();
     expect(pluginJson.userConfig[keys[0]].sensitive).toBe(true);
+    // required 면 설정이 없는 환경(CI, plugin eval)에서 서버가 뜨지 않는다 (2026-11-17 eval에서 확인)
+    expect(pluginJson.userConfig[keys[0]].required).toBe(false);
   });
 
   it("Skill마다 SKILL.md가 있고 frontmatter name이 폴더명과 같다", () => {

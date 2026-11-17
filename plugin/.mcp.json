@@ -4,7 +4,7 @@
       "command": "node",
       "args": ["${CLAUDE_PLUGIN_ROOT}/bin/launch.mjs"],
       "env": {
-        "DATA_GO_KR_SERVICE_KEY": "${user_config.data_go_kr_service_key}"
+        "KOREA_TRANSIT_PLUGIN_KEY": "${user_config.data_go_kr_service_key}"
       }
     }
   }
