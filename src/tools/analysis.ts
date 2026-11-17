@@ -56,6 +56,7 @@ export function registerAnalysisTools(server: McpServer, { stations, routes }: T
         "노선에서 운행 중인 버스들의 앞뒤 차 간격을 계산합니다. 각 간격의 정류장 수(gapStops), " +
         "균등 배치 대비 비율(ratio, 1이 균등), 추정 시간 간격(estMin, 분)을 돌려줍니다. " +
         "ratio가 작으면 앞차와 붙어 있는 것(몰림)이고, 크면 간격이 벌어진 것(공백)입니다. " +
+        "마지막 간격(crossesOrigin)은 노선 끝에서 기점을 지나 첫 차까지의 순환 간격이고, 위치를 모르는 차량은 unlocatedBuses로 따로 돌려줍니다. " +
         "판단 기준은 이 도구가 정하지 않으니, 결과의 notes에 적힌 가정과 한계를 함께 안내하세요.",
       inputSchema: { cityCode: cityCodeSchema, routeId: routeIdSchema },
     },

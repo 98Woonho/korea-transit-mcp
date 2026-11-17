@@ -42,11 +42,11 @@ export interface RouteStop {
 
 export interface BusLocation {
   vehicleNo: string;
-  /** 현재(또는 직전) 정류소 */
-  stopName: string;
-  nodeId: string;
-  /** 노선 내 정류소 순번 — get_route_stops 의 order 와 같다 */
-  stopOrder: number;
+  /** 현재(또는 직전) 정류소. API가 비워 보내는 경우가 있다 (2026-11-17 실제 확인) */
+  stopName?: string;
+  nodeId?: string;
+  /** 노선 내 정류소 순번 — get_route_stops 의 order 와 같다. 위치를 모르는 차량은 없음 */
+  stopOrder?: number;
   lat: number;
   lng: number;
 }
@@ -83,9 +83,9 @@ interface RawRouteStop {
 
 interface RawBusLocation {
   vehicleno: string;
-  nodeid: string;
-  nodenm: string;
-  nodeord: number | string;
+  nodeid?: string;
+  nodenm?: string;
+  nodeord?: number | string;
   gpslati: number | string;
   gpslong: number | string;
 }
@@ -152,13 +152,14 @@ export class TagoRoutes {
       return items
         .map((b) => ({
           vehicleNo: String(b.vehicleno),
-          stopName: String(b.nodenm),
-          nodeId: String(b.nodeid),
-          stopOrder: Number(b.nodeord),
+          stopName: b.nodenm ? String(b.nodenm) : undefined,
+          nodeId: b.nodeid ? String(b.nodeid) : undefined,
+          stopOrder: toNum(b.nodeord),
           lat: Number(b.gpslati),
           lng: Number(b.gpslong),
         }))
-        .sort((a, b) => a.stopOrder - b.stopOrder);
+        // 위치를 모르는 차량은 맨 뒤로
+        .sort((a, b) => (a.stopOrder ?? Infinity) - (b.stopOrder ?? Infinity));
     });
   }
 

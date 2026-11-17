@@ -64,10 +64,25 @@ describe("analyzeHeadway", () => {
     expect(r.scheduledIntervalMin).toBe(10);
     expect(r.buses.map((b) => b.vehicleNo)).toEqual(["A", "B", "C", "D"]);
     expect(r.gaps).toEqual([
-      { behind: "A", ahead: "B", fromOrder: 5, toOrder: 8, gapStops: 3, ratio: 0.15, estMin: 2, crossesTurnaround: false },
-      { behind: "B", ahead: "C", fromOrder: 8, toOrder: 30, gapStops: 22, ratio: 1.1, estMin: 11, crossesTurnaround: false },
-      { behind: "C", ahead: "D", fromOrder: 30, toOrder: 70, gapStops: 40, ratio: 2, estMin: 20, crossesTurnaround: true },
+      { behind: "A", ahead: "B", fromOrder: 5, toOrder: 8, gapStops: 3, ratio: 0.15, estMin: 2, crossesTurnaround: false, crossesOrigin: false },
+      { behind: "B", ahead: "C", fromOrder: 8, toOrder: 30, gapStops: 22, ratio: 1.1, estMin: 11, crossesTurnaround: false, crossesOrigin: false },
+      { behind: "C", ahead: "D", fromOrder: 30, toOrder: 70, gapStops: 40, ratio: 2, estMin: 20, crossesTurnaround: true, crossesOrigin: false },
+      // 순환: D(70) → 기점 → A(5) = 80 - 70 + 5
+      { behind: "D", ahead: "A", fromOrder: 70, toOrder: 5, gapStops: 15, ratio: 0.75, estMin: 8, crossesTurnaround: false, crossesOrigin: true },
     ]);
+    // 간격의 합은 노선 정류장 수와 같다
+    expect(r.gaps.reduce((s, g) => s + g.gapStops, 0)).toBe(80);
+  });
+
+  it("위치 정보가 없는 차량은 간격 계산에서 빼고 따로 알려준다 (실제 리포트에서 발견된 버그)", () => {
+    const ghost: BusLocation = { vehicleNo: "X", lat: 36, lng: 127 }; // nodeord·nodenm 없음
+    const r = analyzeHeadway({ routeId: "R1", route, stops, now: WEDNESDAY, buses: [bus("A", 10), ghost, bus("B", 50)] });
+    expect(r.busCount).toBe(2);
+    expect(r.idealGapStops).toBe(40);
+    expect(r.unlocatedBuses).toEqual(["X"]);
+    expect(r.buses.map((b) => b.vehicleNo)).toEqual(["A", "B"]);
+    expect(r.gaps.every((g) => Number.isFinite(g.gapStops))).toBe(true);
+    expect(r.notes.join()).toContain("X");
   });
 
   it("요일별 배차간격을 고른다 (KST 기준)", () => {
@@ -146,6 +161,6 @@ describe("분석 도구 (MCP)", () => {
     const { client } = await connectWith(routes, { now: () => new Date("2026-11-22T03:00:00Z") }); // KST 일요일
     const res = parse(await client.callTool({ name: "analyze_headway", arguments: { cityCode: 25, routeId: "RA" } }));
     expect(res).toMatchObject({ routeNo: "106", busCount: 2, totalStops: 5, dayType: "sunday", scheduledIntervalMin: 20 });
-    expect(res.gaps).toHaveLength(1);
+    expect(res.gaps).toHaveLength(2); // 앞뒤 간격 1 + 기점 통과 순환 간격 1
   });
 });

@@ -28,6 +28,8 @@ export interface HeadwayGap {
   estMin?: number;
   /** 이 간격 안에 종점 회차 지점이 있음 (회차 대기 시간 때문에 실제 시간 간격이 더 길 수 있음) */
   crossesTurnaround: boolean;
+  /** 노선 끝에서 기점을 지나 처음으로 이어지는 간격 (기점 대기·출발 조정의 영향을 받음) */
+  crossesOrigin: boolean;
 }
 
 export interface HeadwayAnalysis {
@@ -36,7 +38,10 @@ export interface HeadwayAnalysis {
   routeId: string;
   routeNo?: string;
   totalStops: number;
+  /** 위치가 확인된(간격 계산에 쓴) 차량 수 */
   busCount: number;
+  /** 위치 정보가 없어 계산에서 뺀 차량번호 */
+  unlocatedBuses: string[];
   /** 오늘 요일 유형(KST). 공휴일은 반영하지 않음 */
   dayType: DayType;
   /** 오늘 적용되는 계획 배차간격(분) */
@@ -45,7 +50,7 @@ export interface HeadwayAnalysis {
   idealGapStops?: number;
   /** 노선 순번 순으로 정렬한 버스 위치 */
   buses: { vehicleNo: string; stopOrder: number; stopName: string; direction?: 0 | 1 }[];
-  /** 앞뒤 차 사이 간격 (노선 순번 순) */
+  /** 앞뒤 차 사이 간격 (노선 순번 순, 마지막 항목은 기점을 지나는 순환 간격) */
   gaps: HeadwayGap[];
   notes: string[];
 }
@@ -70,9 +75,21 @@ export function analyzeHeadway(input: {
   const { route, stops, now } = input;
   const totalStops = stops.length;
   const dirByOrder = new Map(stops.map((s) => [s.order, s.direction]));
-  const buses = [...input.buses]
+  const nameByOrder = new Map(stops.map((s) => [s.order, s.name]));
+
+  // 위치(노선 내 순번)를 모르는 차량은 간격 계산에서 뺀다. 넣으면 균등 간격이 틀어진다 (실제 리포트에서 발견)
+  const isLocated = (b: BusLocation): b is BusLocation & { stopOrder: number } =>
+    b.stopOrder !== undefined && Number.isFinite(b.stopOrder);
+  const unlocatedBuses = input.buses.filter((b) => !isLocated(b)).map((b) => b.vehicleNo);
+  const buses = input.buses
+    .filter(isLocated)
     .sort((a, b) => a.stopOrder - b.stopOrder)
-    .map((b) => ({ vehicleNo: b.vehicleNo, stopOrder: b.stopOrder, stopName: b.stopName, direction: dirByOrder.get(b.stopOrder) }));
+    .map((b) => ({
+      vehicleNo: b.vehicleNo,
+      stopOrder: b.stopOrder,
+      stopName: b.stopName ?? nameByOrder.get(b.stopOrder) ?? `순번 ${b.stopOrder}`,
+      direction: dirByOrder.get(b.stopOrder),
+    }));
 
   const dayType = dayTypeKst(now);
   const interval = route?.intervalMin?.[dayType];
@@ -82,6 +99,11 @@ export function analyzeHeadway(input: {
     "기점(차고지)에서 출발 대기 중인 차량은 위치 정보에 나오지 않습니다.",
   ];
   if (dayType !== "weekday") notes.push("공휴일 여부는 반영하지 않았습니다.");
+  if (unlocatedBuses.length > 0) {
+    notes.push(
+      `위치 정보가 없는 차량 ${unlocatedBuses.length}대(${unlocatedBuses.join(", ")})는 간격 계산에서 뺐습니다. 기점 대기 중이거나 단말기 응답 지연일 수 있습니다.`,
+    );
+  }
 
   if (buses.length < 2 || totalStops === 0) {
     notes.push(buses.length === 0 ? "현재 운행 중인 버스가 없습니다." : "운행 중인 버스가 1대뿐이라 간격을 계산할 수 없습니다.");
@@ -91,6 +113,7 @@ export function analyzeHeadway(input: {
       routeNo: route?.routeNo,
       totalStops,
       busCount: buses.length,
+      unlocatedBuses,
       dayType,
       scheduledIntervalMin,
       buses,
@@ -102,10 +125,7 @@ export function analyzeHeadway(input: {
   const idealGapStops = totalStops / buses.length;
   const turn = turnaroundOrder(stops);
   const gaps: HeadwayGap[] = [];
-  for (let i = 1; i < buses.length; i++) {
-    const behind = buses[i - 1];
-    const ahead = buses[i];
-    const gapStops = ahead.stopOrder - behind.stopOrder;
+  const pushGap = (behind: (typeof buses)[number], ahead: (typeof buses)[number], gapStops: number, crossesOrigin: boolean) => {
     const ratio = round2(gapStops / idealGapStops);
     gaps.push({
       behind: behind.vehicleNo,
@@ -115,9 +135,18 @@ export function analyzeHeadway(input: {
       gapStops,
       ratio,
       estMin: scheduledIntervalMin ? Math.round(ratio * scheduledIntervalMin) : undefined,
-      crossesTurnaround: turn !== undefined && behind.stopOrder < turn && ahead.stopOrder >= turn,
+      crossesTurnaround: !crossesOrigin && turn !== undefined && behind.stopOrder < turn && ahead.stopOrder >= turn,
+      crossesOrigin,
     });
+  };
+  for (let i = 1; i < buses.length; i++) {
+    pushGap(buses[i - 1], buses[i], buses[i].stopOrder - buses[i - 1].stopOrder, false);
   }
+  // 노선은 순환한다: 마지막 차(순번 가장 큼)에서 기점을 지나 첫 차까지도 한 간격이다.
+  // 이 간격까지 넣어야 간격의 합 = 노선 정류장 수, 비율 평균 = 1 이 된다.
+  const last = buses[buses.length - 1];
+  const first = buses[0];
+  pushGap(last, first, totalStops - last.stopOrder + first.stopOrder, true);
 
   return {
     analyzedAt: formatKst(now),
@@ -125,6 +154,7 @@ export function analyzeHeadway(input: {
     routeNo: route?.routeNo,
     totalStops,
     busCount: buses.length,
+    unlocatedBuses,
     dayType,
     scheduledIntervalMin,
     idealGapStops: round2(idealGapStops),

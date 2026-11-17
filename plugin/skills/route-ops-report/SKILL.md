@@ -42,10 +42,10 @@ korea-transit MCP 도구가 필요하다. `korea-transit` 플러그인으로 설
 ## 운행 지표
 | 항목 | 값 |
 |---|---|
-| 운행 대수 | {busCount}대 |
+| 운행 대수 | {busCount}대 (위치 미확인 차량이 있으면 "+ 위치 미확인 n대") |
 | 노선 정류장 | {totalStops}개 |
 | 균등 간격 | {idealGapStops}정류장 (≈ {scheduledIntervalMin}분) |
-| 정상 / 몰림 / 공백 구간 | {n} / {n} / {n} |
+| 정상 / 몰림 / 공백 구간 | {n} / {n} / {n} (회차·기점 통과 구간 {n}개 판정 제외) |
 
 ## 주요 이슈
 | 구분 | 뒤차 → 앞차 | 위치 | 간격 | 추정 |

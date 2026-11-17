@@ -69,7 +69,7 @@ export function registerRouteTools(server: McpServer, { routes }: ToolContext) {
         ]);
         const dirByOrder = new Map(stops.map((s) => [s.order, s.direction]));
         return buses.map((b) => {
-          const dir = dirByOrder.get(b.stopOrder);
+          const dir = b.stopOrder !== undefined ? dirByOrder.get(b.stopOrder) : undefined;
           const towards = dir === 0 ? info?.endStop : dir === 1 ? info?.startStop : undefined;
           return { vehicleNo: b.vehicleNo, stopName: b.stopName, stopOrder: b.stopOrder, nodeId: b.nodeId, towards };
         });
