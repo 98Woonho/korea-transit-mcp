@@ -42,6 +42,8 @@ export function createServer({ client, cache = new MemoryCache() }: ServerDeps):
       title: "버스 정류소 검색",
       description:
         "도시 코드와 정류소명(또는 정류소 번호)으로 버스 정류소를 검색합니다. " +
+        "결과는 이름이 검색어와 정확히 일치 → 앞부분 일치 → 포함 순으로 정렬됩니다. " +
+        "같은 이름의 정류소가 여러 개면 도로 반대편 등 방향이 다른 정류소이고, 하나의 도시 코드에 인접 시·군이 함께 묶여 있을 수 있습니다. " +
         "결과의 nodeId는 도착 정보 조회 등 다른 도구에서 사용됩니다.",
       inputSchema: {
         cityCode: z.number().int().describe("list_cities로 얻은 도시 코드"),
@@ -66,7 +68,9 @@ export function createServer({ client, cache = new MemoryCache() }: ServerDeps):
       description:
         "정류소에 도착 예정인 버스를 도착이 빠른 순으로 조회합니다. " +
         "nodeId는 search_bus_stops 결과에서 얻습니다. routeId를 주면 해당 노선만 조회합니다. " +
-        "arrivalMin은 남은 시간(분), stopsAway는 몇 정류장 전인지입니다. 결과가 비어 있으면 현재 운행 중인 도착 예정 버스가 없는 것입니다.",
+        "arrivalMin은 남은 시간(분, 반올림), stopsAway는 몇 정류장 전인지입니다. " +
+        "arrivingSoon이 true이면 1분 이내이므로 분 대신 '곧 도착'으로 안내하세요. " +
+        "결과가 비어 있으면 현재 운행 중인 도착 예정 버스가 없는 것입니다.",
       inputSchema: {
         cityCode: z.number().int().describe("도시 코드"),
         nodeId: z.string().min(1).describe("정류소 ID. 예: 'DJB8001378'"),

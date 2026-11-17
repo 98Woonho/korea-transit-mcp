@@ -7,6 +7,9 @@ import type { DataGoKrClient } from "../datagokr/client.js";
 
 const SERVICE = "/1613000/ArvlInfoInqireService";
 
+/** 이 시간(초) 미만이면 "곧 도착"으로 본다 */
+const SOON_SEC = 60;
+
 export interface BusArrival {
   routeId: string;
   routeNo: string;
@@ -16,8 +19,10 @@ export interface BusArrival {
   vehicleType?: string;
   /** 도착까지 남은 시간(초) */
   arrivalSec: number;
-  /** 도착까지 남은 시간(분, 올림) — LLM이 그대로 읽기 좋게 */
+  /** 도착까지 남은 시간(분, 반올림) — LLM이 그대로 읽기 좋게 */
   arrivalMin: number;
+  /** 1분 이내 도착 ("곧 도착") */
+  arrivingSoon: boolean;
   /** 몇 정류장 전인지 */
   stopsAway: number;
 }
@@ -73,7 +78,8 @@ function toArrival(a: RawArrival): BusArrival {
     routeType: a.routetp || undefined,
     vehicleType: a.vehicletp || undefined,
     arrivalSec,
-    arrivalMin: Math.ceil(arrivalSec / 60),
+    arrivalMin: Math.round(arrivalSec / 60),
+    arrivingSoon: arrivalSec < SOON_SEC,
     stopsAway: Number(a.arrprevstationcnt),
   };
 }

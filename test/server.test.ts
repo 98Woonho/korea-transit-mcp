@@ -15,13 +15,24 @@ const routes = {
     { citycode: 33010, cityname: "청주시" },
     { citycode: 21, cityname: "부산광역시" },
   ]),
-  getSttnNoList: okResponse([
-    { nodeid: "CJB283000001", nodenm: "청주시청", nodeno: 10001, gpslati: 36.6424, gpslong: 127.4890, citycode: 33010 },
-  ]),
+  getSttnNoList: (url: URL) =>
+    url.searchParams.get("cityCode") === "25"
+      ? // 2026-11-17 실제 응답(대전, "시청")의 순서 그대로 — API는 nodeId 순으로 준다
+        okResponse([
+          { nodeid: "DJB8001378", nodenm: "대전광역시청", nodeno: 32350, gpslati: 36.351112, gpslong: 127.38486 },
+          { nodeid: "DJB8002087", nodenm: "시청.교육청", nodeno: 32310, gpslati: 36.351395, gpslong: 127.3835 },
+          { nodeid: "DJB8002088", nodenm: "시청역", nodeno: 32410, gpslati: 36.351147, gpslong: 127.38868 },
+          { nodeid: "DJB8002089", nodenm: "시청환승지", nodeno: 32340, gpslati: 36.352467, gpslong: 127.38446 },
+          { nodeid: "DJB8005048", nodenm: "계룡시청", nodeno: 73800, gpslati: 36.273994, gpslong: 127.251724 },
+        ])
+      : okResponse([
+          { nodeid: "CJB283000001", nodenm: "청주시청", nodeno: 10001, gpslati: 36.6424, gpslong: 127.4890, citycode: 33010 },
+        ]),
   // 2026-11-17 실제 응답(대전광역시청)에서 가져온 형태
   getSttnAcctoArvlPrearngeInfoList: okResponse([
     { arrprevstationcnt: 4, arrtime: 329, nodeid: "DJB8001378", nodenm: "대전광역시청", routeid: "DJB30300039", routeno: 104, routetp: "간선버스", vehicletp: "저상버스" },
     { arrprevstationcnt: 2, arrtime: 156, nodeid: "DJB8001378", nodenm: "대전광역시청", routeid: "DJB30300041", routeno: 106, routetp: "간선버스", vehicletp: "일반차량" },
+    { arrprevstationcnt: 1, arrtime: 22, nodeid: "DJB8001378", nodenm: "대전광역시청", routeid: "DJB30300081", routeno: 617, routetp: "간선버스", vehicletp: "저상버스" },
   ]),
   // 1건이면 item 이 배열이 아닌 객체로 온다
   getSttnAcctoSpcifyRouteBusArvlPrearngeInfoList: okResponse(
@@ -51,9 +62,21 @@ describe("korea-transit-mcp", () => {
     const { client } = await connect();
     const res = await client.callTool({ name: "get_bus_arrivals", arguments: { cityCode: 25, nodeId: "DJB8001378" } });
     expect(parse(res)).toEqual([
-      { routeId: "DJB30300041", routeNo: "106", routeType: "간선버스", vehicleType: "일반차량", arrivalSec: 156, arrivalMin: 3, stopsAway: 2 },
-      { routeId: "DJB30300039", routeNo: "104", routeType: "간선버스", vehicleType: "저상버스", arrivalSec: 329, arrivalMin: 6, stopsAway: 4 },
+      { routeId: "DJB30300081", routeNo: "617", routeType: "간선버스", vehicleType: "저상버스", arrivalSec: 22, arrivalMin: 0, arrivingSoon: true, stopsAway: 1 },
+      { routeId: "DJB30300041", routeNo: "106", routeType: "간선버스", vehicleType: "일반차량", arrivalSec: 156, arrivalMin: 3, arrivingSoon: false, stopsAway: 2 },
+      { routeId: "DJB30300039", routeNo: "104", routeType: "간선버스", vehicleType: "저상버스", arrivalSec: 329, arrivalMin: 5, arrivingSoon: false, stopsAway: 4 },
     ]);
+  });
+
+  it("search_bus_stops: 후보를 넉넉히 받아 관련도 순으로 정렬하고, limit만 바뀐 재검색은 캐시를 쓴다", async () => {
+    const { client, calls } = await connect();
+    const res = await client.callTool({ name: "search_bus_stops", arguments: { cityCode: 25, name: "시청", limit: 3 } });
+    expect(parse(res).map((s: any) => s.name)).toEqual(["시청역", "시청.교육청", "시청환승지"]);
+    expect(calls[0].searchParams.get("numOfRows")).toBe("100");
+
+    const more = await client.callTool({ name: "search_bus_stops", arguments: { cityCode: 25, name: "시청", limit: 10 } });
+    expect(parse(more)).toHaveLength(5);
+    expect(calls).toHaveLength(1);
   });
 
   it("get_bus_arrivals: routeId를 주면 노선 지정 오퍼레이션을 쓰고, 1건 응답도 배열로 준다", async () => {
