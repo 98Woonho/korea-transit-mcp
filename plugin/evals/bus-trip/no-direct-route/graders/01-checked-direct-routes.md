@@ -1,7 +1,5 @@
 ---
-type: llm
-focus: trace
-weight: 1
+type: tool_used
+tool: mcp__plugin_korea-transit_korea-transit__find_direct_routes
+input_match: 'DJB8001641[\s\S]*toNodeIds[\s\S]*DJB800213[34]'
 ---
-
-find_direct_routes was called with the 목원대학교 and 신탄진역 stop candidates and returned an empty result
