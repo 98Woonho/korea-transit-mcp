@@ -1,6 +1,6 @@
 {
   "name": "korea-transit-mcp",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "MCP server for Korean public transit data (bus stops, arrivals, routes) via data.go.kr open APIs",
   "type": "module",
   "bin": {

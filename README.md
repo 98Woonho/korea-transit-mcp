@@ -7,13 +7,28 @@ Claude Desktop, Claude Code, Cursor 등 MCP 클라이언트에서 "청주시청 
 
 ## 제공 도구 (Tools)
 
-| Tool | 설명 | 상태 |
+국토교통부 TAGO 버스 API 4종(정류소·도착·노선·위치)을 감싼 9개 도구입니다. 서울은 TAGO에 포함되지 않습니다.
+
+| 분류 | Tool | 설명 |
 |---|---|---|
-| `list_cities` | TAGO 지원 도시와 도시 코드 조회 | ✅ |
-| `search_bus_stops` | 정류소명/번호로 정류소 검색 | ✅ |
-| `get_bus_arrivals` | 정류소 실시간 도착 예정 정보 | ✅ |
-| `get_route_info` | 노선 정보와 경유 정류소 | 🔜 |
-| `get_bus_locations` | 노선별 실시간 버스 위치 | 🔜 |
+| 정류소 | `list_cities` | 지원 도시와 도시 코드 조회 (전국 138개) |
+| | `search_bus_stops` | 정류소명/번호 검색, 관련도 순 정렬 |
+| | `find_nearby_stops` | 좌표 주변 정류소, 가까운 순 + 거리(m) |
+| | `get_routes_at_stop` | 정류소 경유 노선 + **다음 정류소·방면** (같은 이름의 길 건너편 정류소 구분) |
+| 도착 | `get_bus_arrivals` | 실시간 도착 예정 (분, 남은 정류장 수, 곧 도착) |
+| 노선 | `search_routes` | 노선 번호 검색, 첫차·막차 |
+| | `get_route_info` | 기점·종점, 배차간격 (평일/토/일) |
+| | `get_route_stops` | 노선 경유 정류소 순서와 방향 |
+| 위치 | `get_bus_locations` | 운행 중인 버스의 현재 정류소와 향하는 종점 |
+
+### 예시: 이름이 같은 정류소 구분
+"시청역"으로 검색하면 길 건너편 정류소 두 곳이 나옵니다. 공공 API의 "정류소 경유 노선"에는 방향 정보가 없지만,
+이 서버는 노선별 경유 정류소 순서와 방향 코드(`updowncd`)를 합쳐서 방면을 계산합니다.
+
+```
+시청역(32410)  617번: 다음 목련아파트 / 비래동종점 방면
+시청역(32390)  617번: 다음 시청.교육청 / 가장제일장로교회 방면
+```
 
 ## 설계 원칙: LLM 비용 0원
 
@@ -58,13 +73,26 @@ npm run inspect        # MCP Inspector로 도구 직접 실행해 보기
 ```
 src/
   index.ts              # stdio 엔트리포인트
-  server.ts             # MCP 서버와 도구 등록
+  server.ts             # 의존성 조립
   cache.ts              # TTL 캐시 (원격 배포 시 KV로 교체 가능)
   datagokr/client.ts    # data.go.kr 공통 클라이언트 (응답 정규화, 오류 처리)
-  tago/stations.ts      # TAGO 버스정류소정보 API
+  tago/                 # TAGO API 어댑터: 원본 필드 → 정규화된 도메인 객체
+    stations.ts         #   정류소 (검색, 주변, 경유 노선)
+    arrivals.ts         #   도착 정보
+    routes.ts           #   노선, 경유 정류소, 버스 위치, 방향 계산
+  tools/                # MCP 도구 정의 (설명, 입력 스키마, 응답 가공)
+scripts/smoke.ts        # 실제 API로 전체 도구 점검
 test/                   # 가짜 fetch + 인메모리 MCP 클라이언트 테스트
 docs/public-apis.md     # 사용 가능한 공공 API 정리
 ```
+
+### 캐시 정책 (공공 API 일일 한도 보호)
+| 데이터 | TTL |
+|---|---|
+| 도시 코드 | 24시간 |
+| 정류소, 노선, 경유 정류소/노선 | 6시간 |
+| 도착 정보 | 30초 |
+| 버스 위치 | 15초 |
 
 ## License
 MIT

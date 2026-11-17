@@ -55,7 +55,17 @@ describe("korea-transit-mcp", () => {
   it("도구 목록을 노출한다", async () => {
     const { client } = await connect();
     const { tools } = await client.listTools();
-    expect(tools.map((t) => t.name).sort()).toEqual(["get_bus_arrivals", "list_cities", "search_bus_stops"]);
+    expect(tools.map((t) => t.name).sort()).toEqual([
+      "find_nearby_stops",
+      "get_bus_arrivals",
+      "get_bus_locations",
+      "get_route_info",
+      "get_route_stops",
+      "get_routes_at_stop",
+      "list_cities",
+      "search_bus_stops",
+      "search_routes",
+    ]);
   });
 
   it("get_bus_arrivals: 도착이 빠른 순으로 정렬하고 분 단위를 붙인다", async () => {

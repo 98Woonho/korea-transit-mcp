@@ -4,6 +4,7 @@
  */
 import { cached, TTL, type Cache } from "../cache.js";
 import type { DataGoKrClient } from "../datagokr/client.js";
+import { toRoute, type Route } from "./routes.js";
 
 const SERVICE = "/1613000/BusSttnInfoInqireService";
 
@@ -79,6 +80,53 @@ export class TagoStations {
     });
     return ranked.slice(0, limit);
   }
+
+  /**
+   * 좌표 주변 정류소 (가까운 순). 도시 코드 없이 전국에서 찾고, 결과에 cityCode 가 들어 있다.
+   * 같은 정류소가 인접 도시 시스템(예: 대전·세종)에 중복 등록되어 함께 나올 수 있다.
+   */
+  async findNearby(lat: number, lng: number, limit = 10): Promise<(BusStop & { distanceM: number })[]> {
+    // 좌표를 소수 4자리(약 10m)로 반올림해 캐시 적중률을 높인다
+    const rLat = Number(lat.toFixed(4));
+    const rLng = Number(lng.toFixed(4));
+    const all = await cached(this.cache, `tago:nearby:${rLat}:${rLng}`, TTL.stops, async () => {
+      const { items } = await this.client.getList<RawStop>(`${SERVICE}/getCrdntPrxmtSttnList`, {
+        gpsLati: rLat,
+        gpsLong: rLng,
+        numOfRows: CANDIDATES,
+        pageNo: 1,
+      });
+      return items.map(toBusStop);
+    });
+    return all
+      .map((s) => ({ ...s, distanceM: Math.round(distanceMeters(lat, lng, s.lat, s.lng)) }))
+      .sort((a, b) => a.distanceM - b.distanceM)
+      .slice(0, limit);
+  }
+
+  /** 정류소를 경유하는 노선 목록 (방향 정보는 없음 → TagoRoutes.directionAtStop 으로 보강) */
+  getRoutesAtStop(cityCode: number, nodeId: string): Promise<Route[]> {
+    return cached(this.cache, `tago:stopRoutes:${cityCode}:${nodeId}`, TTL.routes, async () => {
+      // 주의: 이 오퍼레이션만 파라미터 이름이 소문자 nodeid 다
+      const { items } = await this.client.getList<Parameters<typeof toRoute>[0]>(`${SERVICE}/getSttnThrghRouteList`, {
+        cityCode,
+        nodeid: nodeId,
+        numOfRows: CANDIDATES,
+        pageNo: 1,
+      });
+      return items.map(toRoute);
+    });
+  }
+}
+
+/** 두 좌표 사이 거리(m), 하버사인 공식 */
+export function distanceMeters(lat1: number, lng1: number, lat2: number, lng2: number): number {
+  const R = 6_371_000;
+  const rad = (d: number) => (d * Math.PI) / 180;
+  const dLat = rad(lat2 - lat1);
+  const dLng = rad(lng2 - lng1);
+  const a = Math.sin(dLat / 2) ** 2 + Math.cos(rad(lat1)) * Math.cos(rad(lat2)) * Math.sin(dLng / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(a));
 }
 
 const CANDIDATES = 100;
