@@ -68,8 +68,10 @@ jobs:
         if: steps.npm_check.outputs.published != 'true'
         run: npm publish --ignore-scripts
 
-      # Trusted Publisher 가 "stage만 허용"이면 배포가 승인 대기열(Staged)로 가고 명령은 성공으로 끝난다.
-      # 그 상태로 레지스트리에 올리면 실패하므로, 실제로 공개됐는지 확인하고 아니면 원인을 알려준다.
+      # npm 버전이 실제로 공개돼야 MCP 레지스트리 검증을 통과한다. 두 경우를 처리한다.
+      #  - 반영 지연: 공개될 때까지 잠시 기다린다.
+      #  - Staged(승인 대기, v0.2.1에서 실제로 겪음): 여기서 멈추고 안내한다 → 웹에서 2FA 승인 후 Re-run 하면
+      #    위 단계가 "이미 배포됨"으로 건너뛰고 레지스트리 등록만 이어서 한다.
       - name: Wait until the version is live on npm
         env:
           SPEC: ${{ steps.npm_check.outputs.spec }}
@@ -81,7 +83,7 @@ jobs:
             fi
             sleep 10
           done
-          echo "::error::$SPEC 이 2분 안에 npm에 공개되지 않았습니다. Staged 승인 대기 중일 수 있습니다. npmjs.com > Staged Packages 에서 승인하고, Trusted Publisher의 Allowed actions에 'npm publish'가 있는지 확인한 뒤 이 워크플로를 Re-run 하세요."
+          echo "::error::$SPEC 이 2분 안에 npm 조회에 나타나지 않았습니다. 반영이 늦는 것이면 잠시 뒤 Re-run 하세요(이미 배포된 버전은 건너뜀). npmjs.com > Staged Packages 에 있다면 승인 후 Re-run 하고, Trusted Publisher의 Allowed actions에 'npm publish'가 있는지 확인하세요."
           exit 1
 
       - uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2

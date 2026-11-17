@@ -21,7 +21,7 @@ git push --follow-tags
 진행 상황은 GitHub 저장소의 **Actions → Release**에서 확인합니다.
 
 ## 실패했을 때
-- **"npm에 공개되지 않았습니다 (Staged 승인 대기)"**: npmjs.com → Staged Packages에서 승인한 뒤 Actions에서 **Re-run**합니다. 다음부터 이 문제가 없도록 Trusted Publisher의 Allowed actions에 `npm publish`를 추가합니다. 이 설정은 수정이 안 되므로 삭제하고 다시 만들어야 합니다.
+- **"npm 조회에 나타나지 않았습니다"**: 대개 npm 반영 지연입니다. 잠시 뒤 Actions에서 **Re-run**하세요. npmjs.com → Staged Packages에 올라가 있다면 승인한 뒤 Re-run하고, Trusted Publisher의 Allowed actions에 `npm publish`가 있는지 확인합니다. 이 설정은 수정이 안 되므로 삭제하고 다시 만들어야 합니다.
 - **MCP 레지스트리 단계만 실패**: 그냥 **Re-run**하면 됩니다. 이미 npm에 있는 버전은 배포를 건너뜁니다.
 
 ## 버전 규칙
