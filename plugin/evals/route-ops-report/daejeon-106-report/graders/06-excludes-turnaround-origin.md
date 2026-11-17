@@ -1,7 +1,7 @@
 ---
 type: llm
-focus: trace
+focus: last_message
 weight: 1
 ---
 
-No gap marked crossesTurnaround or crossesOrigin in the analyze_headway result is graded as 몰림 or 공백 in the report
+Gaps that the report describes as passing the turnaround (회차) or the origin terminal (기점 통과) are marked as excluded from judging, not graded as 몰림 or 공백

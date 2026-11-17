@@ -1,7 +1,7 @@
 ---
 type: llm
-focus: trace
+focus: last_message
 weight: 1
 ---
 
-No gap with ratio of 2.0 or less is labeled as 공백 in the report
+No gap that the report itself shows with a ratio of 2.0 or less (2배 이하) is labeled as 공백 in the report

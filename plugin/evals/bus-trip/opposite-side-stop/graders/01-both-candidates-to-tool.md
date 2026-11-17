@@ -1,7 +1,5 @@
 ---
-type: llm
-focus: trace
-weight: 1
+type: tool_used
+tool: mcp__plugin_korea-transit_korea-transit__find_direct_routes
+input_match: '"fromNodeIds"\s*:\s*\[(?=[^\]]*DJB8002088)(?=[^\]]*DJB8002969)'
 ---
-
-find_direct_routes was called with both 시청역 stop IDs (DJB8002088 and DJB8002969) in fromNodeIds, rather than only one pre-selected stop

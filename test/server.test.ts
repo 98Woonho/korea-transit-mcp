@@ -68,6 +68,26 @@ describe("korea-transit-mcp", () => {
       for (const name of evalTools) expect(text, p).toContain(`mcp__plugin_korea-transit_korea-transit__${name}`);
     }
 
+    // 규칙 채점(tool_used / tool_order)이 실제 도구 이름과 올바른 정규식을 쓰는지
+    const known = new Set(["Skill", "Read", ...evalTools.map((n: string) => `mcp__plugin_korea-transit_korea-transit__${n}`)]);
+    const graders = readdirSync(evalRoot, { recursive: true, encoding: "utf8" }).filter(
+      (f) => /graders[\\/].+\.md$/.test(f) && !/^results[\\/]/.test(f),
+    );
+    let ruleGraders = 0;
+    for (const g of graders) {
+      const head = readFileSync(new URL(g.replaceAll("\\", "/"), evalRoot), "utf8").match(/^---\n([\s\S]*?)\n---/)?.[1] ?? "";
+      const fm = Object.fromEntries(
+        head.split("\n").map((l) => [l.slice(0, l.indexOf(":")).trim(), l.slice(l.indexOf(":") + 1).trim().replace(/^'(.*)'$/, "$1")]),
+      );
+      if (fm.type !== "tool_used" && fm.type !== "tool_order") continue;
+      ruleGraders++;
+      for (const k of ["tool", "before", "after"]) if (fm[k]) expect(known.has(fm[k]), `${g}: ${k}=${fm[k]}`).toBe(true);
+      if (fm.input_match) expect(() => new RegExp(fm.input_match), g).not.toThrow();
+      // CLI는 min 기본값이 1이라, "부르지 않아야 한다"(max 0)는 min 0을 함께 써야 통과할 수 있다
+      if (fm.max !== undefined && Number(fm.max) < 1) expect(fm.min, `${g}: max 0 needs min 0`).toBe("0");
+    }
+    expect(ruleGraders).toBeGreaterThan(0);
+
     expect(tools.map((t) => t.name).sort()).toEqual([
       "analyze_headway",
       "find_direct_routes",

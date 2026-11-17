@@ -1,7 +1,5 @@
 ---
-type: llm
-focus: trace
-weight: 1
+type: tool_used
+tool: Read
+input_match: 'route-ops-report[\\/]+references[\\/]+criteria\.md'
 ---
-
-The run read the skill's references/criteria.md before judging the gaps
