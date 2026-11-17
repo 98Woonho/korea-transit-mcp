@@ -1,7 +1,7 @@
 {
   "name": "korea-transit",
   "displayName": "Korea Transit",
-  "version": "0.3.2",
+  "version": "0.4.0",
   "description": "한국 시내버스(서울 제외) 실시간 정보 MCP 서버와 Skill 묶음: 이동 안내(bus-trip), 노선 운행 분석 리포트(route-ops-report)",
   "author": {
     "name": "98Woonho",
