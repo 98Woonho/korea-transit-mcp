@@ -1,0 +1,44 @@
+{
+  "name": "korea-transit-mcp",
+  "version": "0.1.0",
+  "description": "MCP server for Korean public transit data (bus stops, arrivals, routes) via data.go.kr open APIs",
+  "type": "module",
+  "bin": {
+    "korea-transit-mcp": "dist/index.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "dev": "tsx --env-file-if-exists=.env src/index.ts",
+    "smoke": "tsx --env-file-if-exists=.env scripts/smoke.ts",
+    "start": "node dist/index.js",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "inspect": "npm run build && npx @modelcontextprotocol/inspector node dist/index.js"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "korea",
+    "transit",
+    "bus",
+    "data.go.kr"
+  ],
+  "license": "MIT",
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.32.2",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.6.0",
+    "vitest": "^5.1.0"
+  }
+}
