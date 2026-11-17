@@ -49,9 +49,40 @@ jobs:
       - run: npm test
       - run: npm run build
 
+      # 이미 공개된 버전이면 건너뛴다 → 레지스트리 단계만 실패했을 때 Re-run 으로 이어서 진행 가능
+      - name: Check if this version is already on npm
+        id: npm_check
+        run: |
+          NAME=$(node -p "require('./package.json').name")
+          VERSION=$(node -p "require('./package.json').version")
+          echo "spec=$NAME@$VERSION" >> "$GITHUB_OUTPUT"
+          if npm view "$NAME@$VERSION" version >/dev/null 2>&1; then
+            echo "published=true" >> "$GITHUB_OUTPUT"
+            echo "$NAME@$VERSION 은 이미 npm에 있습니다. 배포를 건너뜁니다."
+          else
+            echo "published=false" >> "$GITHUB_OUTPUT"
+          fi
+
       # 위에서 검증·빌드를 마쳤으므로 prepublishOnly 는 건너뛴다
       - name: Publish to npm (Trusted Publishing)
+        if: steps.npm_check.outputs.published != 'true'
         run: npm publish --ignore-scripts
+
+      # Trusted Publisher 가 "stage만 허용"이면 배포가 승인 대기열(Staged)로 가고 명령은 성공으로 끝난다.
+      # 그 상태로 레지스트리에 올리면 실패하므로, 실제로 공개됐는지 확인하고 아니면 원인을 알려준다.
+      - name: Wait until the version is live on npm
+        env:
+          SPEC: ${{ steps.npm_check.outputs.spec }}
+        run: |
+          for i in $(seq 1 12); do
+            if npm view "$SPEC" version >/dev/null 2>&1; then
+              echo "$SPEC 공개 확인"
+              exit 0
+            fi
+            sleep 10
+          done
+          echo "::error::$SPEC 이 2분 안에 npm에 공개되지 않았습니다. Staged 승인 대기 중일 수 있습니다. npmjs.com > Staged Packages 에서 승인하고, Trusted Publisher의 Allowed actions에 'npm publish'가 있는지 확인한 뒤 이 워크플로를 Re-run 하세요."
+          exit 1
 
       - uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
 
