@@ -79,30 +79,39 @@ sequenceDiagram
 2. "국토교통부_(TAGO)_버스정류소정보" 등 필요한 API에 **활용신청** (대부분 자동승인)
 3. 마이페이지 > 개인 API 인증키에서 **Decoding 키**를 복사
 
-### 2. 로컬 실행
+### 2. MCP 클라이언트에 연결 (설치 불필요, `npx`로 실행)
+
+**Claude Code**
 ```bash
-npm install
-cp .env.example .env   # DATA_GO_KR_SERVICE_KEY 입력
-npm test
-npm run inspect        # MCP Inspector로 도구 직접 실행해 보기
+claude mcp add korea-transit -e DATA_GO_KR_SERVICE_KEY=발급받은_Decoding_키 -- npx -y korea-transit-mcp
 ```
 
-### 3. Claude Code / Claude Desktop에 연결
-
-**Claude Code (이 저장소에서 개발할 때):** `npm run build` 후 이 폴더를 열면 [.mcp.json](.mcp.json)이 자동으로 인식됩니다. 키는 서버가 `.env`에서 직접 읽습니다.
-
-**Claude Desktop 등 다른 클라이언트:** 설정 파일에 아래처럼 추가합니다.
+**Claude Desktop / Cursor 등** 설정 파일의 `mcpServers`에 추가:
 ```json
 {
   "mcpServers": {
     "korea-transit": {
-      "command": "node",
-      "args": ["/절대경로/korea-transit-mcp/dist/index.js"],
+      "command": "npx",
+      "args": ["-y", "korea-transit-mcp"],
       "env": { "DATA_GO_KR_SERVICE_KEY": "발급받은_Decoding_키" }
     }
   }
 }
 ```
+
+Node.js 20.12 이상이 필요합니다.
+
+## 개발
+
+```bash
+npm install
+cp .env.example .env   # DATA_GO_KR_SERVICE_KEY 입력
+npm test               # 네트워크·LLM 없이 도는 테스트
+npm run smoke          # 실제 API로 전체 도구 점검
+npm run inspect        # MCP Inspector로 도구 직접 실행
+```
+
+이 저장소를 Claude Code로 열면 [.mcp.json](.mcp.json)으로 로컬 빌드(`dist/`)가 자동 연결되고, 키는 서버가 `.env`에서 직접 읽습니다.
 
 ## 구조
 

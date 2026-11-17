@@ -1,7 +1,8 @@
 {
   "name": "korea-transit-mcp",
   "version": "0.2.0",
-  "description": "MCP server for Korean public transit data (bus stops, arrivals, routes) via data.go.kr open APIs",
+  "description": "MCP server for Korean public bus data (stops, real-time arrivals, routes, bus locations) via data.go.kr TAGO APIs",
+  "mcpName": "io.github.98Woonho/korea-transit-mcp",
   "type": "module",
   "bin": {
     "korea-transit-mcp": "dist/index.js"
@@ -17,19 +18,32 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "inspect": "npm run build && npx @modelcontextprotocol/inspector node dist/index.js"
+    "inspect": "npm run build && npx @modelcontextprotocol/inspector node dist/index.js",
+    "prepublishOnly": "npm run typecheck && npm test && npm run build"
   },
   "keywords": [
     "mcp",
+    "mcp-server",
     "model-context-protocol",
     "korea",
     "transit",
     "bus",
-    "data.go.kr"
+    "public-data",
+    "data.go.kr",
+    "tago"
   ],
+  "author": "98Woonho",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/98Woonho/korea-transit-mcp.git"
+  },
+  "homepage": "https://github.com/98Woonho/korea-transit-mcp#readme",
+  "bugs": {
+    "url": "https://github.com/98Woonho/korea-transit-mcp/issues"
+  },
   "engines": {
-    "node": ">=20"
+    "node": ">=20.12"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.32.2",

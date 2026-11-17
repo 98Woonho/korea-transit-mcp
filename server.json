@@ -1,0 +1,31 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.98Woonho/korea-transit-mcp",
+  "title": "Korea Transit (TAGO)",
+  "description": "Korean bus stops, real-time arrivals, routes and bus locations via data.go.kr TAGO APIs",
+  "repository": {
+    "url": "https://github.com/98Woonho/korea-transit-mcp",
+    "source": "github"
+  },
+  "version": "0.2.0",
+  "packages": [
+    {
+      "registryType": "npm",
+      "registryBaseUrl": "https://registry.npmjs.org",
+      "identifier": "korea-transit-mcp",
+      "version": "0.2.0",
+      "transport": {
+        "type": "stdio"
+      },
+      "environmentVariables": [
+        {
+          "name": "DATA_GO_KR_SERVICE_KEY",
+          "description": "data.go.kr API key (Decoding key) with TAGO bus APIs approved",
+          "isRequired": true,
+          "isSecret": true,
+          "format": "string"
+        }
+      ]
+    }
+  ]
+}
