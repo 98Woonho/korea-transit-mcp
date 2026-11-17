@@ -1,9 +1,45 @@
 # korea-transit-mcp
 
-공공데이터포털(data.go.kr)의 대중교통 Open API를 AI 에이전트가 사용할 수 있도록 만든 **MCP(Model Context Protocol) 서버**입니다.
-Claude Desktop, Claude Code, Cursor 등 MCP 클라이언트에서 "청주시청 정류장에 다음 버스 언제 와?" 같은 질문에 실제 데이터로 답할 수 있게 합니다.
+[![CI](https://github.com/98Woonho/korea-transit-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/98Woonho/korea-transit-mcp/actions/workflows/ci.yml)
+![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript&logoColor=white)
+![Node](https://img.shields.io/badge/node-%3E%3D20-339933?logo=node.js&logoColor=white)
+![MCP](https://img.shields.io/badge/MCP-server-D97757)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-> 🚧 개발 중 (v0.1.0)
+공공데이터포털(data.go.kr)의 전국 버스 Open API를 AI 에이전트가 쓸 수 있게 만든 **MCP(Model Context Protocol) 서버**입니다.
+Claude Code, Claude Desktop, Cursor 같은 MCP 클라이언트에서 "시청역에서 106번 언제 와?" 같은 질문에 **실시간 데이터로** 답할 수 있습니다.
+
+<p align="center">
+  <img src="docs/demo.svg" alt="Claude Code에서 대전 시청역 106번 버스 도착 정보를 조회하는 데모" width="860">
+</p>
+
+## 작동 방식
+
+사용자가 질문하면 LLM(MCP 클라이언트)이 필요한 도구를 스스로 골라 순서대로 호출합니다. 서버는 공공 API를 호출해 정규화된 결과만 돌려주고, **LLM을 직접 호출하지 않습니다.**
+
+```mermaid
+sequenceDiagram
+    actor U as 사용자
+    participant C as MCP 클라이언트<br/>(Claude Code 등)
+    participant S as korea-transit-mcp
+    participant K as 캐시
+    participant A as 공공데이터포털<br/>TAGO API
+
+    U->>C: "시청역에서 비래동 가는 106번 언제 와?"
+    C->>S: search_bus_stops(25, "시청역")
+    S->>K: 조회
+    K-->>S: miss
+    S->>A: getSttnNoList
+    A-->>S: 시청역 2곳 (길 건너편)
+    S-->>C: 관련도 순 정렬된 정류소
+    C->>S: get_routes_at_stop(시청역 #32410)
+    S->>A: 경유 노선 + 노선별 경유 정류소
+    S-->>C: 106번 → 비래동종점 방면 ✓
+    C->>S: get_bus_arrivals(#32410, 106번)
+    S->>A: 도착 예정 정보 (30초 캐시)
+    S-->>C: 4분 후, 3정류장 전
+    C-->>U: "시청역(32410)에서 타세요. 약 4분 후 도착"
+```
 
 ## 제공 도구 (Tools)
 
