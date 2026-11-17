@@ -10,10 +10,12 @@ description: 한국 시내버스(서울 제외, 국토교통부 TAGO 지원 도�
 
 ## 준비
 
-korea-transit MCP 도구가 필요하다. 도구 목록에 `find_direct_routes`가 없으면 안내를 시작하지 말고, 설치 방법을 알려 준다.
+korea-transit MCP 도구가 필요하다. `korea-transit` 플러그인으로 설치했다면 이미 연결되어 있다.
+도구 목록에 `find_direct_routes`(이름 앞에 플러그인 접두사가 붙을 수 있음)가 없으면 안내를 시작하지 말고, 설치 방법을 알려 준다.
 
 ```
-claude mcp add korea-transit -e DATA_GO_KR_SERVICE_KEY=<공공데이터포털 Decoding 키> -- npx -y korea-transit-mcp
+/plugin marketplace add 98Woonho/korea-transit-mcp
+/plugin install korea-transit@korea-transit-mcp
 ```
 
 ## 진행 순서

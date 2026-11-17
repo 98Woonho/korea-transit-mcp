@@ -84,7 +84,21 @@ sequenceDiagram
 2. "국토교통부_(TAGO)_버스정류소정보" 등 필요한 API에 **활용신청** (대부분 자동승인)
 3. 마이페이지 > 개인 API 인증키에서 **Decoding 키**를 복사
 
-### 2. MCP 클라이언트에 연결 (설치 불필요, `npx`로 실행)
+### 2-A. Claude Code 플러그인으로 설치 (추천: MCP 서버 + Skill 한 번에)
+
+```
+/plugin install korea-transit --marketplace 98Woonho/korea-transit-mcp
+```
+
+플러그인을 켤 때 **인증키 입력 창**이 뜹니다. 키는 OS 보안 저장소에 보관되고 설정 파일에는 남지 않습니다.
+설치하면 MCP 도구 11개와 함께 아래 Skill이 들어옵니다.
+
+| Skill | 이렇게 물어보세요 | 하는 일 |
+|---|---|---|
+| `korea-transit:bus-trip` | "대전 시청역에서 목련아파트까지 버스 뭐 타?" | 길 건너편 정류장까지 구분해 탈 곳, 노선, 실시간 도착을 안내 |
+| `korea-transit:route-ops-report` | "대전 106번 운행 상태 분석해줘" | 배차간격 대비 몰림·공백 구간을 판정한 운행관리 리포트 |
+
+### 2-B. MCP 서버만 연결 (다른 클라이언트, `npx`로 실행)
 
 **Claude Code**
 ```bash
@@ -134,6 +148,11 @@ src/
     routes.ts           #   노선, 경유 정류소, 버스 위치, 방향 계산
   analysis/             # 순수 계산 로직 (직통 노선 판별, 운행 간격 분석) — API 호출 없음
   tools/                # MCP 도구 정의 (설명, 입력 스키마, 응답 가공)
+plugin/                 # Claude Code 플러그인 (마켓플레이스: .claude-plugin/marketplace.json)
+  .claude-plugin/plugin.json  # 매니페스트, 인증키 입력(userConfig)
+  .mcp.json             #   npm 패키지를 실행하는 MCP 설정
+  bin/launch.mjs        #   플러그인 버전과 같은 npm 버전을 실행 (Windows 호환)
+  skills/               #   bus-trip, route-ops-report
 scripts/smoke.ts        # 실제 API로 전체 도구 점검
 test/                   # 가짜 fetch + 인메모리 MCP 클라이언트 테스트
 docs/public-apis.md     # 사용 가능한 공공 API 정리

@@ -26,7 +26,8 @@ git push --follow-tags
 
 ## 버전 규칙
 - 서버 코드의 버전(`SERVER_INFO`)은 `package.json`에서 읽으므로 따로 고치지 않습니다.
-- `server.json`은 `npm version` 실행 시 [scripts/sync-version.mjs](../scripts/sync-version.mjs)가 맞춰 줍니다.
+- `server.json`과 `plugin/.claude-plugin/plugin.json`은 `npm version` 실행 시 [scripts/sync-version.mjs](../scripts/sync-version.mjs)가 맞춰 줍니다.
+- 플러그인은 `plugin.json`의 버전과 **같은 버전의 npm 패키지**를 실행합니다. 그래서 npm 배포가 끝나야 새 플러그인 버전이 동작합니다. 태그 push 한 번으로 둘 다 갱신됩니다.
 - 세 곳이 어긋나면 [test/release.test.ts](../test/release.test.ts)가 실패해서 배포 전에 걸러집니다.
 
 ## 최초 1회 설정 (완료 후 체크)

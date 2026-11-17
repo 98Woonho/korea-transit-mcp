@@ -1,0 +1,17 @@
+{
+  "name": "korea-transit-mcp",
+  "owner": {
+    "name": "98Woonho",
+    "url": "https://github.com/98Woonho"
+  },
+  "description": "한국 대중교통 공공데이터 MCP 서버와 Skill",
+  "plugins": [
+    {
+      "name": "korea-transit",
+      "source": "./plugin",
+      "description": "한국 시내버스(서울 제외) 실시간 정보 MCP 서버 + 이동 안내·노선 운행 분석 Skill",
+      "category": "productivity",
+      "tags": ["mcp", "korea", "bus", "transit"]
+    }
+  ]
+}

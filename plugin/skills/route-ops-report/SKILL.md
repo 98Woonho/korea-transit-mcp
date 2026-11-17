@@ -10,10 +10,12 @@ description: 시내버스 노선의 실시간 운행 상태를 분석해 운행�
 
 ## 준비
 
-korea-transit MCP 도구가 필요하다. `analyze_headway`가 없으면 설치를 안내한다.
+korea-transit MCP 도구가 필요하다. `korea-transit` 플러그인으로 설치했다면 이미 연결되어 있다.
+`analyze_headway`(이름 앞에 플러그인 접두사가 붙을 수 있음)가 없으면 설치를 안내한다.
 
 ```
-claude mcp add korea-transit -e DATA_GO_KR_SERVICE_KEY=<공공데이터포털 Decoding 키> -- npx -y korea-transit-mcp
+/plugin marketplace add 98Woonho/korea-transit-mcp
+/plugin install korea-transit@korea-transit-mcp
 ```
 
 ## 진행 순서
