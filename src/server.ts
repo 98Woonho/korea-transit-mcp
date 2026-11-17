@@ -1,3 +1,4 @@
+import { createRequire } from "node:module";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { MemoryCache, type Cache } from "./cache.js";
 import type { DataGoKrClient } from "./datagokr/client.js";
@@ -14,7 +15,10 @@ export interface ServerDeps {
   cache?: Cache;
 }
 
-export const SERVER_INFO = { name: "korea-transit-mcp", version: "0.2.0" } as const;
+// 버전은 package.json 하나만 고치면 되도록 런타임에 읽는다 (src/·dist/ 모두 한 단계 위가 패키지 루트)
+const pkg = createRequire(import.meta.url)("../package.json") as { name: string; version: string };
+
+export const SERVER_INFO = { name: pkg.name, version: pkg.version };
 
 export function createServer({ client, cache = new MemoryCache() }: ServerDeps): McpServer {
   const server = new McpServer(SERVER_INFO);
